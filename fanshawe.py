@@ -1,158 +1,70 @@
-import numpy
-import streamlit as st
 import pandas as pd
-import plotly.express as px
-import pdb as pdb
+import streamlit as st
+import matplotlib.pyplot as plt
 
-# Define the UI
-def app():
-####################       Setup        #############################    
-    # Set the tcp itle of the application
-    st.title("Fanshawe Analytics")    
-    # Load the data into a DataFrame
-    df = pd.read_csv("AprilMayAllocsTurndowns.csv")   
-    # Rename the column names
-    df.columns = ['ckid', 'resource', 'rtype', 'status', 'startdatetime', 'endatatime', 'otherdatetime']
-    # Convert the date string to datetime object
-    df['converted_startdatetime'] = pd.to_datetime(df['startdatetime'], format="%m/%d/%Y %H:%M %p")
-    tddf = pd.read_csv("Turndowns.csv")
-    tddf.columns = ['rtype', 'ttime', 'cocenter'];
-    tddf['converted_startdatetime'] = pd.to_datetime(tddf['ttime'], format="%m/%d/%Y %H:%M")
+# Step 1: Import the required libraries
 
-#####################     End Setup      #############################
+# Step 2: Load the allocation data from the CSV file and parse the date columns
+df = pd.read_csv("AprilMayAllocsTurndowns.csv", names=["ckid", "resource", "rtype", "status", "startdate", "enddate", "actualdate"], parse_dates=["startdate", "enddate", "actualdate"])
 
-#####################  Resource by DOW  #############################
-    # Create a new column 'dow' to store the day of week
-    df['dow'] = df['converted_startdatetime'].dt.day_name()
-    # Get the unique resources
-    resources = df['resource'].unique().tolist()
-    # Create the selectbox for resources
-    selected_resources = st.selectbox("Select Resources:", resources)
-    # Filter the data for the selected resource
-    resource_data = df[df['resource'] == selected_resources]
-    # Create a new DataFrame to store the counts of reservations by day of week
-    dow_data = resource_data.groupby(['dow', 'status']).size().reset_index(name='counts')
-    # Reorder the days of week
-    dow_data['dow'] = pd.Categorical(dow_data['dow'], categories=['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'])
-    empty_data = {'dow': ['Monday','Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'],
-         'status': ['CHECKOUT-COMPLETED','CHECKOUT-COMPLETED', 'CHECKOUT-COMPLETED', 'CHECKOUT-COMPLETED', 'CHECKOUT-COMPLETED', 'CHECKOUT-COMPLETED', 'CHECKOUT-COMPLETED' ],
-         'counts': [0, 0, 0, 0, 0, 0,0]}
-    emptyDF = pd.DataFrame(empty_data)
-    dow_data = pd.merge(dow_data, emptyDF, on=['dow', 'status', 'counts'], how='outer')
+# Step 3: Create a Streamlit sidebar with date input controls
+st.sidebar.header("Select date range")
+min_date = df["startdate"].min().date()
+max_date = df["enddate"].max().date()
 
-    fig = px.bar(dow_data, x='dow', y='counts', title='Reservation Start Time by Day of Week', barmode='group', color='status')
-    fig.update_xaxes(title='Day of Week', categoryorder='array', categoryarray=["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"])
-    fig.update_xaxes(type ='category')
-    fig.update_layout(yaxis = dict(tickmode='linear', tickformat=",d"), title=dict(font=dict(size=24)))
-    fig.update_layout(title={'x':0.5, 'xanchor':'center'})
-    fig.update_yaxes(title='Number of Checkouts')
-    # Render the chart
-    st.plotly_chart(fig)
-#####################  End Resources by DOW  #############################
+start_date = st.sidebar.date_input("Start Date", min_date, min_value=min_date, max_value=max_date)
+end_date = st.sidebar.date_input("End Date", max_date, min_value=min_date, max_value=max_date)
 
-#####################  Resources by TOD  #############################
+# Step 4: Validate the date range
+if start_date > end_date:
+    st.sidebar.error("Invalid date range.")
+    st.stop()
 
-#    df['startHour'] = df['startdatetime'].dt.hour.head()
- #   df['hourStr'] = df['startHour'].to_string()
-    df['hour_str'] = df['converted_startdatetime'].dt.strftime('%H')+":00"
+# Step 5: Filter the dataset based on the selected date range
+df_filtered = df[(df["startdate"].dt.date >= start_date) & (df["enddate"].dt.date <= end_date)]
 
-    selectedr_data = df[df['resource'] == selected_resources]
-    # Create a new DataFrame to store the counts of reservations by day of week                                                                      
-    tod_data = selectedr_data.groupby(['hour_str', 'status']).size().reset_index(name='counts')
+# Step 6: Group the filtered data by day and count occurrences for each date column
+df_grouped = df_filtered.groupby(pd.Grouper(key="startdate", freq="D")).size().reset_index(name="counts_start")
+df_grouped["counts_end"] = df_filtered.groupby(pd.Grouper(key="enddate", freq="D")).size().reset_index(drop=True)
+df_grouped["counts_actual"] = df_filtered.groupby(pd.Grouper(key="actualdate", freq="D")).size().reset_index(drop=True)
 
-    empty_tod_data = {'hour_str': ['01:00','02:00', '03:00', '04:00', '05:00', '06:00', '07:00', '08:00', '09:00', '10:00', '11:00', '12:00', '13:00', '14:00', '15:00', '16:00', '17:00', '18:00', '19:00', '20:00', '21:00', '22:00', '23:00'],
-         'status': ['CHECKOUT-COMPLETED', 'CHECKOUT-COMPLETED', 'CHECKOUT-COMPLETED', 'CHECKOUT-COMPLETED', 'CHECKOUT-COMPLETED', 'CHECKOUT-COMPLETED', 'CHECKOUT-COMPLETED', 'CHECKOUT-COMPLETED', 'CHECKOUT-COMPLETED', 'CHECKOUT-COMPLETED', 'CHECKOUT-COMPLETED', 'CHECKOUT-COMPLETED', 'CHECKOUT-COMPLETED', 'CHECKOUT-COMPLETED', 'CHECKOUT-COMPLETED', 'CHECKOUT-COMPLETED','CHECKOUT-COMPLETED','CHECKOUT-COMPLETED', 'CHECKOUT-COMPLETED', 'CHECKOUT-COMPLETED', 'CHECKOUT-COMPLETED', 'CHECKOUT-COMPLETED', 'CHECKOUT-COMPLETED' ],
-         'counts': [0, 0, 0, 0, 0, 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]}
+# Step 7: Merge the grouped dataframes and fill missing values with zero
+df_grouped.fillna(0, inplace=True)
 
-    empty_todDF = pd.DataFrame(empty_tod_data)
-    tod_data = pd.merge(tod_data, empty_todDF, on=['hour_str', 'status', 'counts'], how = "outer")
+# Step 8: Create a bar chart to visualize the counts of allocations for each date column
+fig, ax = plt.subplots(figsize=(12, 8))
 
+dates = df_grouped["startdate"].dt.strftime("%Y-%m-%d").tolist()
+counts_start = df_grouped["counts_start"].tolist()
+counts_end = df_grouped["counts_end"].tolist()
+counts_actual = df_grouped["counts_actual"].tolist()
 
-#    fig_tod_resource = px.bar(tod_data, x='hour_str', y='counts', width=600, height=600, title='Completed Reservations by Start Time', barmode='group', color='status')
-    fig_tod_resource = px.bar(tod_data, x='hour_str', y='counts', title='Completed Reservations by Start Time', barmode='group', color='status')
-    fig_tod_resource.update_xaxes(type='category') 
-    fig_tod_resource.update_xaxes(categoryorder='array', categoryarray=["1:00", "2:00", "3:00", "4:00", "5:00", "6:00", "7:00", "8:00", "9:00", "10:00", "11:00", "12:00", "13:00", "14:00", "15:00", "16:00", "17:00", "18:00", "19:00", "20:00", "21:00", "22:00", "23:00"]) 
-    fig_tod_resource.update_yaxes(title='Number of Checkouts')
-    fig_tod_resource.update_layout(barmode='group', bargap=0.25, bargroupgap=0.1)
-    # Render the chart                                                                                         
-    fig_tod_resource.update_layout(yaxis = dict(tickmode='linear', tickformat=",d"), title=dict(font=dict(size=24)))
-    fig_tod_resource.update_layout(title={'x':0.5, 'xanchor':'center'})
+bar_width = 0.2
+r1 = range(len(dates))
+r2 = [x + bar_width for x in r1]
+r3 = [x + bar_width for x in r2]
 
-    st.plotly_chart(fig_tod_resource)
-    
-#####################  End Resources by TOD  #############################
+ax.bar(r1, counts_start, color="b", width=bar_width, label="Start Dates")
+ax.bar(r2, counts_end, color="r", width=bar_width, label="End Dates")
+ax.bar(r3, counts_actual, color="g", width=bar_width, label="Actual Dates")
 
-#########################  Rtype of DOW  #################################
+# Set labels and title
+ax.set_xlabel("Date Range", fontsize=12, fontweight="bold")
+ax.set_ylabel("Counts", fontsize=12, fontweight="bold")
+ax.set_title(f"Allocation Data ({start_date} to {end_date})", fontsize=14, fontweight="bold")
 
-    rtypes = df['rtype'].unique().tolist()
-    # Create the selectbox for resources                                                                                                                                            
-    selected_rtypes = st.selectbox("Select Types:", rtypes)
-    # Filter the data for the selected resource                                                                                                                                     
-    rtype_data = df[df['rtype'] == selected_rtypes]
-    # Create a new DataFrame to store the counts of reservations by day of week                                                                                                     
-    dow_rtype_data = rtype_data.groupby(['dow', 'status']).size().reset_index(name='counts')
-    # Reorder the days of week
-    #dow_rtype_data['dow'] = pd.Categorical(dow_rtype_data['dow'], categories=['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'])
-    empty_rtype_data = {'dow': ['Monday','Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'],
-                                               'status': ['CHECKOUT-COMPLETED','CHECKOUT-COMPLETED', 'CHECKOUT-COMPLETED', 'CHECKOUT-COMPLETED', 'CHECKOUT-COMPLETED', 'CHECKOUT-COMPLETED', 'CHECKOUT-COMPLETED'],
-                                               'counts': [0, 0, 0, 0, 0, 0,0]}
-    empty_rtypeDF = pd.DataFrame(empty_rtype_data)
-    dow_rtype_data = pd.merge(dow_rtype_data, empty_rtypeDF, on=['dow', 'status', 'counts'], how='outer')
-    dow_rtype_data = dow_rtype_data.sort_values('dow')
-    # Create the bar chart
-    fig_rtype = px.bar(dow_rtype_data, x='dow', y='counts', title='Usage by Resource Type', barmode='group', color='status')
-    fig_rtype.update_xaxes(title='Start Time', tickmode="array", ticktext=['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'])
-    fig_rtype.update_yaxes(title='Number of Checkouts')
-    fig_rtype.update_layout(yaxis = dict(tickmode='linear', tickformat=",d"), title=dict(font=dict(size=24)))
-    fig_rtype.update_layout(title={'x':0.5, 'xanchor':'center'})
-    st.plotly_chart(fig_rtype)
-################################ RTYPES DOW ##################################
+# Set x-axis tick labels
+ax.set_xticks([r + bar_width for r in range(len(dates))])
+ax.set_xticklabels(dates, rotation=45, ha="right", fontsize=9)
 
+# Set y-axis label size and style
+ax.tick_params(axis="y", labelsize=12)
 
-#####################  Resources by TOD  #############################                                                                                                  
-#    df['startHour'] = df['startdatetime'].dt.hour.head()                                                                                                               
- #   df['hourStr'] = df['startHour'].to_string()                                                                                                                        
-    df['hour__rtype_str'] = df['converted_startdatetime'].dt.strftime('%H')+":00"
-    selected_type_data = df[df['rtype'] == selected_rtypes]
-    # Create a new DataFrame to store the counts of reservations by day of week                                                                                         
-    tod_rtype_data = selected_type_data.groupby(['hour_str', 'status']).size().reset_index(name='counts')
+# Display legend
+ax.legend()
 
-    empty_tod_data = {'hour_str': ['1:00','2:00', '3:00', '4:00', '5:00', '6:00', '7:00', '8:00', '9:00', '10:00', '11:00', '12:00', '13:00', '14:00', '15:00', '16:00', '17:00', '18:00', '19:00', '20:00', '21:00', '22:00', '23:00'],
-         'status': ['CHECKOUT-COMPLETED', 'CHECKOUT-COMPLETED', 'CHECKOUT-COMPLETED', 'CHECKOUT-COMPLETED', 'CHECKOUT-COMPLETED', 'CHECKOUT-COMPLETED', 'CHECKOUT-COMPLETED', 'CHECKOUT-COMPLETED', 'CHECKOUT-COMPLETED', 'CHECKOUT-COMPLETED', 'CHECKOUT-COMPLETED', 'CHECKOUT-COMPLETED', 'CHECKOUT-COMPLETED', 'CHECKOUT-COMPLETED', 'CHECKOUT-COMPLETED', 'CHECKOUT-COMPLETED','CHECKOUT-COMPLETED','CHECKOUT-COMPLETED', 'CHECKOUT-COMPLETED', 'CHECKOUT-COMPLETED', 'CHECKOUT-COMPLETED', 'CHECKOUT-COMPLETED', 
-'CHECKOUT-COMPLETED' ],
-         'counts': [0, 0, 0, 0, 0, 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]}
+# Adjust spacing
+plt.tight_layout()
 
-    empty_todDF = pd.DataFrame(empty_tod_data)
-    tod_rtype_data = pd.merge(tod_rtype_data, empty_todDF, on=['hour_str', 'status', 'counts'], how = "outer")
-#    fig_tod_resource = px.bar(tod_data, x='hour_str', y='counts', width=600, height=600, title='Completed Reservations by Start Time', barmode='group', color='status'\
-                                                                                                                                                                       
-    fig_tod_rtype = px.bar(tod_rtype_data, x='hour_str', y='counts', title='Completed Reservations by Start Time', barmode='group', color='status')
-
-    fig_tod_rtype.update_yaxes(title='Number of Checkouts')
-    fig_tod_rtype.update_layout(barmode='group', bargap=0.25, bargroupgap=0.1)
-    fig_tod_rtype.update_layout(yaxis = dict(tickmode='linear', tickformat=",d"), title=dict(font=dict(size=24)))
-    fig_tod_rtype.update_layout(title={'x':0.5, 'xanchor':'center'})
-    st.plotly_chart(fig_tod_rtype)
-
-#########################  End TOD RType ##########################
-
-#########################  Start Turndown  ########################
-
-    turndown_data = tddf.groupby(['rtype']).size().reset_index(name='counts')
-
-    fig_turndowns = px.bar(turndown_data, x='rtype', y='counts', title='Turndown Report')
-
-    fig_turndowns.update_layout(yaxis = dict(tickmode='linear', tickformat=",d"), title=dict(font=dict(size=24)))
-    fig_turndowns.update_layout(title={'x':0.5, 'xanchor':'center'})
-    st.plotly_chart(fig_turndowns)
-
-
-
-    
-    
-# Run the application
-if __name__ == "__main__":
-    app()
-
-
-    
+# Step 9: Display the chart in the Streamlit app
+st.pyplot(fig)
