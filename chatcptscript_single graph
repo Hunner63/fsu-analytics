@@ -1,0 +1,25 @@
+You are building a Streamlit application to analyze allocation data from a CSV file. The application allows users to select a date range and displays a bar chart showing the counts of allocations for start dates, end dates, and actual dates within the selected range.
+
+Write a Python script that accomplishes the following:
+
+Import the required libraries: pandas, streamlit, and matplotlib.pyplot.
+
+Load the allocation data from the CSV file named "AprilMayAllocsTurndowns.csv". The CSV file contains the following columns: "ckid", "resource", "rtype", "status", "startdate", "enddate", and "actualdate". Use parse_dates to parse the "startdate", "enddate", and "actualdate" columns as date values.
+
+Create a Streamlit sidebar with two date input controls for the start and end dates. Set the default values of the date inputs to the minimum and maximum dates from the "startdate" and "enddate" columns, respectively.
+
+Validate the date range selected by the user. If the start date is greater than the end date, display an error message using st.sidebar.error() and stop the script execution using st.stop().
+
+Filter the dataset based on the selected date range. Create a new DataFrame, df_filtered, containing only the rows where the "startdate" is greater than or equal to the selected start date and the "enddate" is less than or equal to the selected end date.
+
+Group the filtered data by day and count the occurrences for each date column separately: "startdate", "enddate", and "actualdate". Create a new DataFrame, df_grouped, with the date columns as the index and the respective count columns: "counts_start", "counts_end", and "counts_actual".
+
+Merge the "counts_end" and "counts_actual" columns into the "df_grouped" DataFrame using the "startdate" as the common index. Use fillna() to replace any missing values with zero.
+
+Create a bar chart using matplotlib.pyplot to visualize the counts of allocations for each date column. The x-axis of the chart should display the dates in the selected range. Set appropriate labels, a title, and adjust the font sizes.
+
+Display the bar chart in the Streamlit app using st.pyplot().
+
+Ensure that you include necessary imports, handle errors, and provide appropriate comments to explain each step of the code.
+
+Test the script using the provided "AprilMayAllocsTurndowns.csv" file and verify that the Streamlit app displays the expected results.
