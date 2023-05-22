@@ -1,5 +1,6 @@
 import pandas as pd
 import streamlit as st
+st.set_page_config(layout="wide")
 import matplotlib.pyplot as plt
 import matplotlib.dates as mdates
 
@@ -82,15 +83,14 @@ else:
         ax.set_xticklabels(comb_data['hour'], rotation=45, ha="right", fontsize=14)
 
         # Set the y-axis label
-        ax.set_ylabel('Counts')
-        ax.set_xlabel('Hours')
+        ax.set_ylabel('Counts', fontsize=12, fontweight="bold")
+        ax.set_xlabel('Hours', , fontsize=12, fontweight="bold")
 
      #   date_formatter = mdates.DateFormatter('%I:00 %p')  # Format as "HH:00 AM/PM"
      #   ax.xaxis.set_major_formatter(date_formatter)
 
-
         # Set the title and legend
-        ax.set_title('Allocation Counts by Hour of the Day')
+        ax.set_title('Allocation Counts by Hour of the Day' , fontsize=18, fontweight="bold")
         ax.legend(loc='center left', bbox_to_anchor=(1, 0.5))
 
         # Display the combo bar graph

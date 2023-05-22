@@ -1,6 +1,8 @@
 import pandas as pd
 import streamlit as st
+st.set_page_config(layout="wide")
 import matplotlib.pyplot as plt
+import matplotlib.font_manager as fm
 
 
 # Step 2: Load the allocation data from the CSV file and parse the date columns
@@ -50,14 +52,16 @@ ax.bar(r3, counts_actual, color="g", width=bar_width, label="Actual Dates")
 # Set labels and title
 ax.set_xlabel("Date Range", fontsize=12, fontweight="bold")
 ax.set_ylabel("Counts", fontsize=12, fontweight="bold")
+axis_font_props = fm.FontProperties(size=10)
 ax.set_title(f"Allocation Data ({start_date} to {end_date})", fontsize=14, fontweight="bold")
 
 # Set x-axis tick labels
 ax.set_xticks([r + bar_width for r in range(len(dates))])
-ax.set_xticklabels(dates, rotation=45, ha="right", fontsize=9)
+ax.set_xticklabels(dates, rotation=45, ha="right", fontsize=10)
 
 # Set y-axis label size and style
 ax.tick_params(axis="y", labelsize=12)
+ax.tick_params(axis="x", labelsize=12)
 
 # Display legend
 ax.legend()
@@ -66,4 +70,4 @@ ax.legend()
 plt.tight_layout()
 
 # Step 9: Display the chart in the Streamlit app
-st.pyplot(fig)
+st.pyplot(fig, use_container_width=True)
