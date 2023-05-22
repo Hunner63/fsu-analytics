@@ -62,7 +62,6 @@ else:
         #  comb_data['hour'] = pd.to_datetime(comb_data['hour'], format='%H')
         # Create the figure and axes for the combo bar graph
         comb_data['hour']= comb_data['hour'].astype(str) + ":00"
-        breakpoint()
         fig, ax = plt.subplots(figsize=(12, 6))
 
         # Set the width of each bar
