@@ -12,6 +12,7 @@ df.columns = ["ckid", "resources", "rtype", "status", "startdatetime", "enddatet
 df["startdatetime"] = pd.to_datetime(df["startdatetime"])
 df["enddatetime"] = pd.to_datetime(df["enddatetime"])
 df["actualdatetime"] = pd.to_datetime(df["actualdatetime"])
+df['actualdatetime'].replace('', pd.NaT, inplace=True)
 
 # Filter to unique ckid
 temp_df = df.drop_duplicates(subset='ckid', keep='first')
@@ -39,19 +40,21 @@ if filtered_df.empty:
     st.write("No data within selected date range.")
 else:
     # Group the DataFrame by ckid and hour for startdatetime, enddatetime, and actualdatetime
-    filtered_df['starthour'] = filtered_df["startdatetime"].dt.hour
-    filtered_df['endhour'] = filtered_df["enddatetime"].dt.hour
-    filtered_df['actualhour'] = filtered_df["actualdatetime"].dt.hour
+    filtered_df = filtered_df.dropna()
+    filtered_df.loc[:, 'starthour'] = filtered_df["startdatetime"].dt.hour.astype(int)
+    filtered_df.loc[:, 'endhour'] = filtered_df["enddatetime"].dt.hour.astype(int)
+    filtered_df.loc[:, 'actualhour'] = filtered_df["actualdatetime"].dt.hour.astype(int)
     grouped_start = filtered_df.groupby('starthour').size().reset_index(name="start_counts")
     grouped_start.rename(columns={'starthour':'hour'}, inplace=True)
     grouped_end = filtered_df.groupby('endhour').size().reset_index(name="end_counts")
     grouped_end.rename(columns={'endhour':'hour'}, inplace=True)
     grouped_actual = filtered_df.groupby('actualhour').size().reset_index(name="actual_counts")
     grouped_actual.rename(columns={'actualhour':'hour'}, inplace=True)
+
     # Combine the grouped dataframes into a single dataframe
     comb_data = pd.merge(grouped_start, grouped_end, on='hour', how='outer')
     comb_data = pd.merge(comb_data, grouped_actual, on='hour', how='outer')
-  
+    comb_data = comb_data.fillna(0)
     if comb_data.empty:
         st.write("No data in comb_data")
     else:
@@ -59,6 +62,7 @@ else:
         #  comb_data['hour'] = pd.to_datetime(comb_data['hour'], format='%H')
         # Create the figure and axes for the combo bar graph
         comb_data['hour']= comb_data['hour'].astype(str) + ":00"
+        breakpoint()
         fig, ax = plt.subplots(figsize=(12, 6))
 
         # Set the width of each bar
@@ -82,8 +86,8 @@ else:
         ax.set_ylabel('Counts')
         ax.set_xlabel('Hours')
 
-        #date_formatter = mdates.DateFormatter('%I:00 %p')  # Format as "HH:00 AM/PM"
-        #ax.xaxis.set_major_formatter(date_formatter)
+     #   date_formatter = mdates.DateFormatter('%I:00 %p')  # Format as "HH:00 AM/PM"
+     #   ax.xaxis.set_major_formatter(date_formatter)
 
 
         # Set the title and legend
