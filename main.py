@@ -1,6 +1,21 @@
 import streamlit as st
 from PIL import Image
 
+#import streamlit as st
+#rom pickups_date_range.py import pickups_date_range
+#from returns_date_range.py import returns_date_range
+#from pickups_hour.py import pickups_hour
+#from returns_hour.py import returns_hour
+#from turndowns.py import turndowns
+
+#PAGES = {
+#    "Pickups by Date Range" : pickups_date_range,
+#    "Returns by Date Range" : returns_date_range,
+#    "Pickups by Hour of Day": pickups_hour,
+#    "Returns by Hour of Day": returns_hour,
+#    "Turndowns by date range": turndowns
+#}
+
 # Load the image
 image = Image.open("fanshawe.png")
 

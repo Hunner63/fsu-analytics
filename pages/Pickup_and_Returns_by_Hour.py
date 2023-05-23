@@ -36,11 +36,14 @@ if start_date > end_date:
 
 # Filter the DataFrame based on the selected date range
 filtered_df = temp_df[(temp_df["startdatetime"].dt.date >= start_date) & (temp_df["startdatetime"].dt.date <= end_date)]
+resources_filtered = filtered_df
+
 # Display "No data within selected date range" if there is no data in the date range
 if filtered_df.empty:
     st.write("No data within selected date range.")
 else:
     # Group the DataFrame by ckid and hour for startdatetime, enddatetime, and actualdatetime
+    deduped_df = filtered_df.drop_duplicates(subset='ckid', keep='first')
     filtered_df = filtered_df.dropna()
     filtered_df.loc[:, 'starthour'] = filtered_df["startdatetime"].dt.hour.astype(int)
     filtered_df.loc[:, 'endhour'] = filtered_df["enddatetime"].dt.hour.astype(int)
@@ -51,6 +54,16 @@ else:
     grouped_end.rename(columns={'endhour':'hour'}, inplace=True)
     grouped_actual = filtered_df.groupby('actualhour').size().reset_index(name="actual_counts")
     grouped_actual.rename(columns={'actualhour':'hour'}, inplace=True)
+#    deduped_df = filtered_df.dropna()
+#    filtered_df.loc[:, 'starthour'] = filtered_df["startdatetime"].dt.hour.astype(int)
+#    filtered_df.loc[:, 'endhour'] = filtered_df["enddatetime"].dt.hour.astype(int)
+#    filtered_df.loc[:, 'actualhour'] = filtered_df["actualdatetime"].dt.hour.astype(int)
+#    grouped_start = filtered_df.groupby('starthour').size().reset_index(name="start_counts")
+#    grouped_start.rename(columns={'starthour':'hour'}, inplace=True)
+#    grouped_end = filtered_df.groupby('endhour').size().reset_index(name="end_counts")
+#    grouped_end.rename(columns={'endhour':'hour'}, inplace=True)
+#    grouped_actual = filtered_df.groupby('actualhour').size().reset_index(name="actual_counts")
+#    grouped_actual.rename(columns={'actualhour':'hour'}, inplace=True)
 
     # Combine the grouped dataframes into a single dataframe
     comb_data = pd.merge(grouped_start, grouped_end, on='hour', how='outer')
@@ -74,9 +87,9 @@ else:
         r3 = [x + bar_width for x in r2]
 
         # Plot the bars for start counts, end counts, and actual counts
-        ax.bar(r1, comb_data['start_counts'], color='b', width=bar_width, label='Scheduled checkout times')
-        ax.bar(r2, comb_data['end_counts'], color='r', width=bar_width, label='Scheduled return times')
-        ax.bar(r3, comb_data['actual_counts'], color='g', width=bar_width, label='Actual return time')
+        ax.bar(r1, comb_data['start_counts'], color='b', width=bar_width, label='Checkout times')
+        ax.bar(r2, comb_data['end_counts'], color='r', width=bar_width, label='Return times')
+        ax.bar(r3, comb_data['actual_counts'], color='g', width=bar_width, label='Reservation times')
 
         # Set the x-axis tick positions and labels
         ax.set_xticks([r + bar_width for r in range(len(comb_data['hour']))])
