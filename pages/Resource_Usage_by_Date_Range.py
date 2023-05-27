@@ -30,13 +30,7 @@ filtered_data = data[(data['startdatetime'] >= start_date) & (data['startdatetim
 # Calculate the count of occurances
 count = filtered_data.shape[0]
 
-# Display the count
-#hide_table_row_index = """
-#            <style>
-#            thead tr th:first-child {display:none}
-#            tbody th {display:none}
-#            </style>
-#            """
+"
 
 st.markdown(f"<h1 style='text-align: center; color: black;'>The number of occurances of the selected rtype within the selected date range is: {count}</h1>", unsafe_allow_html=True)
 
