@@ -3,17 +3,19 @@ import streamlit as st
 st.set_page_config(layout="wide")
 import matplotlib.pyplot as plt
 import matplotlib.dates as mdates
+from datetime import datetime, timedelta
+from datetime import date
 
-
-# Load the allocation data from the CSV file
-df = pd.read_csv("AprilMayAllocsTurndowns.csv")
-df.columns = ["ckid", "resources", "rtype", "status", "startdatetime", "enddatetime", "actualdatetime"]
-
+df = pd.read_csv("Resource Schedules.csv")
+df.columns = ["ckid", "resources", "rtype", "status", "startdatetime_str", "enddatetime_str"]
 # Convert datetime columns to datetime format
-df["startdatetime"] = pd.to_datetime(df["startdatetime"])
-df["enddatetime"] = pd.to_datetime(df["enddatetime"])
-df["actualdatetime"] = pd.to_datetime(df["actualdatetime"])
-df['actualdatetime'].replace('', pd.NaT, inplace=True)
+df['startdatetime'] = pd.to_datetime(df['startdatetime_str'], format="%m/%d/%y %I:%M %p")
+df['enddatetime'] = pd.to_datetime(df['enddatetime_str'], format="%m/%d/%y %I:%M %p")
+#Construct string of hours
+df["start_time_str"] = df["startdatetime_str"].str[9:]
+df['start_hour_str'] = df['start_time_str'].str.split(":").str[0]+":00 "+df['start_time_str'].str[-2:]
+df["end_time_str"] = df["enddatetime_str"].str[9:]
+df['end_hour_str'] = df['end_time_str'].str.split(":").str[0]+":00 "+df['end_time_str'].str[-2:]
 
 # Filter to unique ckid
 temp_df = df.drop_duplicates(subset='ckid', keep='first')
@@ -24,10 +26,8 @@ st.sidebar.header("Date Range Selector")
 # Set default date range values (one week before today and today)
 default_end_date = pd.Timestamp.now().normalize()
 default_start_date = default_end_date - pd.DateOffset(weeks=1)
-
-# Select start and end dates
-start_date = st.sidebar.date_input("Start Date", default_start_date)
-end_date = st.sidebar.date_input("End Date", default_end_date)
+start_date = st.sidebar.date_input("Start Date", value=datetime.today().date())
+end_date = st.sidebar.date_input("End Date", value=datetime.today().date())
 
 # Validate the date range
 if start_date > end_date:
@@ -35,47 +35,30 @@ if start_date > end_date:
     st.stop()
 
 # Filter the DataFrame based on the selected date range
-filtered_df = temp_df[(temp_df["startdatetime"].dt.date >= start_date) & (temp_df["startdatetime"].dt.date <= end_date)]
-resources_filtered = filtered_df
+filtered_df = temp_df[(temp_df["startdatetime"] >= pd.to_datetime(start_date)) & (temp_df["startdatetime"] <= pd.to_datetime(end_date))]
 
-# Display "No data within selected date range" if there is no data in the date range
 if filtered_df.empty:
     st.write("No data within selected date range.")
 else:
     # Group the DataFrame by ckid and hour for startdatetime, enddatetime, and actualdatetime
     deduped_df = filtered_df.drop_duplicates(subset='ckid', keep='first')
     filtered_df = filtered_df.dropna()
-    filtered_df.loc[:, 'starthour'] = filtered_df["startdatetime"].dt.hour.astype(int)
-    filtered_df.loc[:, 'endhour'] = filtered_df["enddatetime"].dt.hour.astype(int)
-    filtered_df.loc[:, 'actualhour'] = filtered_df["actualdatetime"].dt.hour.astype(int)
-    grouped_start = filtered_df.groupby('starthour').size().reset_index(name="start_counts")
-    grouped_start.rename(columns={'starthour':'hour'}, inplace=True)
-    grouped_end = filtered_df.groupby('endhour').size().reset_index(name="end_counts")
-    grouped_end.rename(columns={'endhour':'hour'}, inplace=True)
-    grouped_actual = filtered_df.groupby('actualhour').size().reset_index(name="actual_counts")
-    grouped_actual.rename(columns={'actualhour':'hour'}, inplace=True)
-#    deduped_df = filtered_df.dropna()
-#    filtered_df.loc[:, 'starthour'] = filtered_df["startdatetime"].dt.hour.astype(int)
-#    filtered_df.loc[:, 'endhour'] = filtered_df["enddatetime"].dt.hour.astype(int)
-#    filtered_df.loc[:, 'actualhour'] = filtered_df["actualdatetime"].dt.hour.astype(int)
-#    grouped_start = filtered_df.groupby('starthour').size().reset_index(name="start_counts")
-#    grouped_start.rename(columns={'starthour':'hour'}, inplace=True)
-#    grouped_end = filtered_df.groupby('endhour').size().reset_index(name="end_counts")
-#    grouped_end.rename(columns={'endhour':'hour'}, inplace=True)
-#    grouped_actual = filtered_df.groupby('actualhour').size().reset_index(name="actual_counts")
-#    grouped_actual.rename(columns={'actualhour':'hour'}, inplace=True)
-
-    # Combine the grouped dataframes into a single dataframe
+    grouped_start = filtered_df.groupby('start_hour_str').size().reset_index(name="start_counts")
+    grouped_start.rename(columns={'start_hour_str':'hour'}, inplace=True)
+    grouped_end = filtered_df.groupby('end_hour_str').size().reset_index(name="end_counts")
+    grouped_end.rename(columns={'end_hour_str':'hour'}, inplace=True)
+    filled_df = pd.DataFrame(columns=["hour"])
+    filled_df['hour']=["7:00 AM", "8:00 AM","9:00 AM", "10:00 AM","11:00 AM", "12:00 PM","1:00 PM", "2:00 PM","3:00 PM", "4:00 PM", "5:00 PM", "6:00 PM"]
     comb_data = pd.merge(grouped_start, grouped_end, on='hour', how='outer')
-    comb_data = pd.merge(comb_data, grouped_actual, on='hour', how='outer')
+    comb_data = pd.merge(comb_data, filled_df, on="hour", how="outer" )
     comb_data = comb_data.fillna(0)
     if comb_data.empty:
         st.write("No data in comb_data")
     else:
-        comb_data = comb_data.sort_values('hour')
-        #  comb_data['hour'] = pd.to_datetime(comb_data['hour'], format='%H')
-        # Create the figure and axes for the combo bar graph
-        comb_data['hour']= comb_data['hour'].astype(str) + ":00"
+        hours=['7:00 AM', '8:00 AM','9:00 AM', '10:00 AM','11:00 AM', '12:00 PM','1:00 PM', '2:00 PM','3:00 PM', '4:00 PM', '5:00 PM', '6:00 PM']
+        comb_data = comb_data.sort_values(by='hour', key=lambda x: pd.Categorical(x, categories=hours))
+        #comb_data = comb_data[hours]
+     #   comb_data['hour']= comb_data['hour'].astype(str) + ":00"
         fig, ax = plt.subplots(figsize=(12, 6))
 
         # Set the width of each bar
@@ -89,7 +72,6 @@ else:
         # Plot the bars for start counts, end counts, and actual counts
         ax.bar(r1, comb_data['start_counts'], color='b', width=bar_width, label='Checkout times')
         ax.bar(r2, comb_data['end_counts'], color='r', width=bar_width, label='Return times')
-        ax.bar(r3, comb_data['actual_counts'], color='g', width=bar_width, label='Reservation times')
 
         # Set the x-axis tick positions and labels
         ax.set_xticks([r + bar_width for r in range(len(comb_data['hour']))])
@@ -99,12 +81,8 @@ else:
         ax.set_ylabel('Counts', fontsize=12, fontweight="bold")
         ax.set_xlabel('Hours', fontsize=12, fontweight="bold")
 
-     #   date_formatter = mdates.DateFormatter('%I:00 %p')  # Format as "HH:00 AM/PM"
-     #   ax.xaxis.set_major_formatter(date_formatter)
-
-        # Set the title and legend
+       # Set the title and legend
         ax.set_title('Allocation Counts by Hour of the Day', fontsize=18, fontweight="bold")
         ax.legend(loc='center left', bbox_to_anchor=(1, 0.5))
 
-        # Display the combo bar graph
         st.pyplot(fig)
