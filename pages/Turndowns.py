@@ -4,9 +4,7 @@ import pandas as pd
 
 # Read in the data
 turndown_data = pd.read_csv("Turndowns.csv", names=['rtype', 'turndowndatetime', 'cocenter'])
-
-#convert to dates
-turndown_data['turndowndatetime'] = pd.to_datetime(turndown_data['turndowndatetime'])
+turndown_data['turndowndatetime'] = pd.to_datetime(turndown_data['turndowndatetime'], errors='coerce')
 turndown_data['turndowndatetime'] = turndown_data['turndowndatetime'].dt.date
 
 # Create a date range selector
