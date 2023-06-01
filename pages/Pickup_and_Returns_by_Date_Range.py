@@ -71,7 +71,6 @@ if not merged_df.empty:
     r1 = range(len(dates))
     r2 = [x + bar_width for x in r1]
     r3 = [x + bar_width for x in r2]
-    st.table(sorted_merged_df)
 
     ax.bar(r1, sorted_merged_df["start_counts"].tolist(), color="b", width=bar_width, label="Checkouts ")
 
