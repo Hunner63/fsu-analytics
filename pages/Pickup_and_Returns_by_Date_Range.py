@@ -32,16 +32,31 @@ if start_date > end_date:
 
 # Step 5: Filter the dataset based on the selected date range
 df_filtered = df[(df["startdate"].dt.date >= start_date) & (df["startdate"].dt.date <= end_date)]
-resources_filtered = df_filtered
+resources_filtered = df_filtered.groupby('resource').size().reset_index(name="count")
+ckDF = df_filtered.drop_duplicates(subset='ckid', keep='first')
+ckDF['resourceCount'] = ckDF['ckid'].map(df_filtered['ckid'].value_counts())
 
-deduped_df = df_filtered.drop_duplicates(subset='ckid', keep='first')
+ckDF.loc[:,'dow_start'] = ckDF['startdate'].dt.day_name()
+ckDF.loc[:,'dow_end'] = ckDF['enddate'].dt.day_name()
+ck_per_day_starts = ckDF.groupby('dow_start').size().reset_index(name='start_counts')
+ck_per_day_ends = ckDF.groupby('dow_end').size().reset_index(name='end_counts')
+resources_per_day_starts = ckDF.groupby('dow_start')['resourceCount'].sum().reset_index(name='resourcesStart')
+resources_per_day_ends = ckDF.groupby('dow_end')['resourceCount'].sum().reset_index(name='resourcesEnd')
 df_filtered.loc[:,'dow_start'] = df_filtered['startdate'].dt.day_name()
 df_filtered.loc[:,'dow_end'] = df_filtered['enddate'].dt.day_name()
-per_day_starts = df_filtered.groupby('dow_start').size().reset_index(name='start_counts')
-per_day_ends = df_filtered.groupby('dow_end').size().reset_index(name='end_counts')
-per_day_starts.rename(columns={'dow_start' : 'dow'}, inplace=True)
-per_day_ends.rename(columns={'dow_end' : 'dow'}, inplace=True)
-merged_df = per_day_starts.merge(per_day_ends, on='dow')
+resources_per_day_starts = df_filtered.groupby('dow_start').size().reset_index(name='start_counts')
+resources_per_day_ends = df_filtered.groupby('dow_end').size().reset_index(name='end_counts')
+
+ck_per_day_starts.rename(columns={'dow_start' : 'dow'}, inplace=True)
+ck_per_day_ends.rename(columns={'dow_end' : 'dow'}, inplace=True)
+
+resources_per_day_starts.rename(columns={'dow_start' : 'dow'}, inplace=True)
+resources_per_day_ends.rename(columns={'dow_end' : 'dow'}, inplace=True)
+merged_df = ck_per_day_starts.merge(ck_per_day_ends, on='dow')
+breakpoint()
+
+merged_df = merged_df.merge(resources_per_day_starts.groupby('dow')['resourcesStart'].sum().reset_index(), on='dow')
+merged_df = merged_df.merge(resources_per_day_ends.groupby('dow')['resourcesEnd'].sum().reset_index(), on='dow')
 merged_df.fillna(0, inplace=True)
 fig, ax = plt.subplots(figsize=(12, 8))
 
@@ -59,6 +74,7 @@ if not merged_df.empty:
 
     ax.bar(r1, sorted_merged_df["start_counts"].tolist(), color="b", width=bar_width, label="Checkouts ")
     ax.bar(r2, sorted_merged_df["end_counts"].tolist(), color="r", width=bar_width, label="Returns")
+    ax.plot(r3, resources_filtered['resource'].tolist(), color="g", marker="o", label="Total resources")
 
 # Set labels and title
     ax.set_xlabel("Days of the Week", fontsize=12, fontweight="bold")
