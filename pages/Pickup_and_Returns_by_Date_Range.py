@@ -67,10 +67,13 @@ dates = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday']
 merged_df.reindex(dates)
 if not merged_df.empty:
     sorted_merged_df = merged_df.set_index('dow').loc[dates].reset_index()
-    bar_width = 0.2
+
+    bar_width = 0.3
+    space_between_bars = 0.05  # Adjust the space between bars as desired
+
     r1 = range(len(dates))
-    r2 = [x + bar_width for x in r1]
-    r3 = [x + bar_width for x in r2]
+    r2 = [x + bar_width + space_between_bars for x in r1]
+    r3 = [x + 2 * bar_width + space_between_bars for x in r2]
 
     ax.bar(r1, sorted_merged_df["start_counts"].tolist(), color="b", width=bar_width, label="Checkouts ")
 

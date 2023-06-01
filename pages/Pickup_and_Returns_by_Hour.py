@@ -62,16 +62,25 @@ else:
         fig, ax = plt.subplots(figsize=(12, 6))
 
         # Set the width of each bar
-        bar_width = 0.2
+        bar_width = 0.3
+        space_between_bars = 0.05  # Adjust the space between bars as desired
+
 
         # Set the positions for the bars
         r1 = range(len(comb_data['hour']))
-        r2 = [x + bar_width for x in r1]
-        r3 = [x + bar_width for x in r2]
+        r2 = [x + bar_width + space_between_bars for x in r1]
+        r3 = [x + 2 * bar_width + space_between_bars for x in r2]
 
         # Plot the bars for start counts, end counts, and actual counts
         ax.bar(r1, comb_data['start_counts'], color='b', width=bar_width, label='Checkout times')
+    
+        for i, v in enumerate(comb_data["start_counts"].tolist()):
+            ax.text(r1[i], v, str(int(v)), ha='center', va='bottom')
+
         ax.bar(r2, comb_data['end_counts'], color='r', width=bar_width, label='Return times')
+        for i, v in enumerate(comb_data["end_counts"].tolist()):
+            ax.text(r2[i], v, str(int(v)), ha='center', va='bottom')
+
 
         # Set the x-axis tick positions and labels
         ax.set_xticks([r + bar_width for r in range(len(comb_data['hour']))])
