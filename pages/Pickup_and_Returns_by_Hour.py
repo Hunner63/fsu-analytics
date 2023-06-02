@@ -74,8 +74,8 @@ else:
         r2 = r1 + bar_width + space_between_bars
 
         # Plot the lines for start counts and end counts
-        ax.plot(r1, comb_resources_data['alloc_start_counts'], color='r' , label='Checkouts')
-        ax.plot(r1, comb_resources_data['alloc_end_counts'], color='g', label='Returns')
+        ax.plot(r1, comb_resources_data['alloc_start_counts'].values.flatten(), color='r' , label='Checkouts')
+        ax.plot(r1, comb_resources_data['alloc_end_counts'].values.flatten(), color='g', label='Returns')
 
         # Plot the bars for start counts and end counts
         ax.bar(r1, comb_resources_data['resources_start_counts'], color='r', width=bar_width, label='Checked Resources')
