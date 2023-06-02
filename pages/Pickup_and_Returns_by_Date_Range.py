@@ -110,7 +110,7 @@ if not merged_df.empty:
     ax.tick_params(axis="x", labelsize=12)
     ax.set_xticks(range(len(dates)))
     ax.set_xticklabels([dates[i] for i in x_ticks])  # Use the custom order for tick labels
-    ax.legend()
+    ax.legend(loc='center left', bbox_to_anchor=(1, 0.5))
     plt.tight_layout()
     st.pyplot(fig, use_container_width=True)
 

@@ -3,6 +3,7 @@ import streamlit as st
 st.set_page_config(layout="wide")
 import matplotlib.pyplot as plt
 import matplotlib.dates as mdates
+import numpy as np
 from datetime import datetime, timedelta
 from datetime import date
 
@@ -67,41 +68,44 @@ else:
         fig, ax = plt.subplots(figsize=(12, 6))
 
         bar_width = 0.3
-        space_between_bars = 0.05  # Adjust the space between bars as desired
+        space_between_bars = 0.05
 
-        r1 = range(len(comb_resources_data['hour']))
-        r2 = [x + bar_width + space_between_bars for x in r1]
-        r3 = [x + 2 * bar_width + space_between_bars for x in r2]
+        r1 = np.arange(len(comb_resources_data['hour']))
+        r2 = r1 + bar_width + space_between_bars
 
-        # Plot the bars for start counts, end counts, and actual counts
-        ax.plot(r1, comb_resources_data['alloc_start_counts'], color='b', marker='o', label='Checkouts')
-    
+        # Plot the lines for start counts and end counts
+        ax.plot(r1, comb_resources_data['alloc_start_counts'], color='r', marker='o', label='Checkouts')
+        ax.plot(r1, comb_resources_data['alloc_end_counts'], color='g', marker='o', label='Returns')
+
+        # Plot the bars for start counts and end counts
+        ax.bar(r1, comb_resources_data['resources_start_counts'], color='r', width=bar_width, label='Checked Resources')
+        ax.bar(r2, comb_resources_data['resources_end_counts'], color='b', width=bar_width, label='Returned Resources')
+
+        # Add text annotations for start counts and end counts
         for i, v in enumerate(comb_resources_data["alloc_start_counts"].tolist()):
             ax.text(r1[i], v, str(int(v)), ha='center', va='bottom')
 
-        ax.plot(r1, comb_resources_data['alloc_end_counts'], color='b', marker='o', label='Returns')
         for i, v in enumerate(comb_resources_data["alloc_end_counts"].tolist()):
-            ax.text(r2[i], v, str(int(v)), ha='center', va='bottom')
+            ax.text(r1[i], v, str(int(v)), ha='center', va='bottom')
 
-        ax.bar(r1, comb_resources_data['resources_start_counts'], color='b', marker='o', label='Checkoed Resources')
+        # Add text annotations for resource counts
         for i, v in enumerate(comb_resources_data["resources_start_counts"].tolist()):
             ax.text(r1[i], v, str(int(v)), ha='center', va='bottom')
 
-        ax.bar(r1, comb_resources_data['resources_end_counts'], color='b', marker='o', label='Returned Resources')
         for i, v in enumerate(comb_resources_data["resources_end_counts"].tolist()):
-            ax.text(r1[i], v, str(int(v)), ha='center', va='bottom')
-
+            ax.text(r2[i], v, str(int(v)), ha='center', va='bottom')
 
         # Set the x-axis tick positions and labels
-        ax.set_xticks([r + bar_width for r in range(len(comb_resources_data['hour']))])
-        ax.set_xticklabels(comb_resources_data['hour'], rotation=45, ha="right", fontsize=14)
+        ax.set_xticks(r1 + bar_width / 2)
+        ax.set_xticklabels(comb_resources_data['hour'], rotation=45, ha="right", fontsize=9)
 
         # Set the y-axis label
-        ax.set_ylabel('Counts', fontsize=12, fontweight="bold")
-        ax.set_xlabel('Hours', fontsize=12, fontweight="bold")
+        ax.set_ylabel('Counts', fontsize=10, fontweight="bold")
+        ax.set_xlabel('Hours', fontsize=10, fontweight="bold")
 
-       # Set the title and legend
+        # Set the title and legend
         ax.set_title('Allocation Counts by Hour of the Day', fontsize=18, fontweight="bold")
-        ax.legend(loc='center left', bbox_to_anchor=(1, 0.5))
+        ax.legend(loc='upper right')
 
-        st.pyplot(fig)
+        plt.tight_layout()
+        st.pyplot(fig, use_container_width=True)
