@@ -14,14 +14,10 @@ df['startdatetime'] = pd.to_datetime(df['startdatetime_str'], format="%m/%d/%y %
 df['enddatetime'] = pd.to_datetime(df['enddatetime_str'], format="%m/%d/%y %I:%M %p")
 #Construct string of hours
 df["start_time_str"] = df["startdatetime_str"].str[9:]
-df['start_hour_str'] = df['start_time_str'].str.split(":").str[0]+":00 "+df['start_time_str'].str[-2:]
+df['startHour'] = df['start_time_str'].str.split(":").str[0]+":00 "+df['start_time_str'].str[-2:]
 df["end_time_str"] = df["enddatetime_str"].str[9:]
-df['end_hour_str'] = df['end_time_str'].str.split(":").str[0]+":00 "+df['end_time_str'].str[-2:]
+df['endHour'] = df['end_time_str'].str.split(":").str[0]+":00 "+df['end_time_str'].str[-2:]
 
-# Filter to unique ckid
-temp_df = df.drop_duplicates(subset='ckid', keep='first')
-
-# Create a Streamlit sidebar for date range selection
 st.sidebar.header("Date Range Selector")
 
 # Set default date range values (one week before today and today)
@@ -34,78 +30,95 @@ if start_date > end_date:
     st.sidebar.error("Invalid date range.")
     st.stop()
 
-filtered_df = temp_df[(temp_df["startdatetime"] >= pd.to_datetime(start_date)) & (temp_df["startdatetime"] <= pd.to_datetime(end_date))]
+resourcesFilteredDF = df[(df["startdatetime"] >= pd.to_datetime(start_date)) & (df["startdatetime"] <= pd.to_datetime(end_date))].copy()
 
-if filtered_df.empty:
+if resourcesFilteredDF.empty:
     st.write("No data within selected date range.")
 else:
-    dedupedDF = filtered_df.drop_duplicates(subset='ckid', keep='first')
-    filtered_df = filtered_df.dropna()
-    grouped_resources_start = filtered_df.groupby('start_hour_str').size().reset_index(name="resources_start_counts")
-    grouped_resources_start.rename(columns={'start_hour_str':'hour'}, inplace=True)
-    grouped_resources_end = filtered_df.groupby('end_hour_str').size().reset_index(name="resources_end_counts")
-    grouped_resources_end.rename(columns={'end_hour_str':'hour'}, inplace=True)
- 
-    grouped_allocs_start = dedupedDF.groupby('start_hour_str').size().reset_index(name="alloc_start_counts")
-    grouped_allocs_start.rename(columns={'start_hour_str':'hour'}, inplace=True)
-    grouped_allocs_end = dedupedDF.groupby('end_hour_str').size().reset_index(name="alloc_end_counts")
-    grouped_allocs_end.rename(columns={'end_hour_str':'hour'}, inplace=True)
-
-    filled_df = pd.DataFrame(columns=["hour"])
-    filled_df['hour']=["7:00 AM", "8:00 AM","9:00 AM", "10:00 AM","11:00 AM", "12:00 PM","1:00 PM", "2:00 PM","3:00 PM", "4:00 PM", "5:00 PM", "6:00 PM"]
-    comb_resources_data = pd.merge(grouped_resources_start, grouped_resources_end, on='hour', how='outer')
-    comb_resources_data = pd.merge(comb_resources_data, filled_df, on="hour", how="outer" )
-
-    comb_resources_data = pd.merge(comb_resources_data, grouped_allocs_start, on="hour", how="outer" )
-    comb_resources_data = pd.merge(comb_resources_data, grouped_allocs_end, on="hour", how="outer" )
-
-    comb_resources_data = comb_resources_data.fillna(0)
-    if comb_resources_data.empty:
-        st.write("No data in comb_data")
+    resourcesStartGrouped = resourcesFilteredDF.groupby('startHour').size().reset_index(name="startCount")
+    resourcesEndGrouped = resourcesFilteredDF.groupby('endHour').size().reset_index(name="endCount")
+    allocsFilteredDF = resourcesFilteredDF.drop_duplicates(subset='ckid', keep='first').copy()
+    allocsStartGrouped = allocsFilteredDF.groupby('startHour').size().reset_index(name="startCount")
+    allocsEndGrouped = allocsFilteredDF.groupby('endHour').size().reset_index(name="endCount")
+   
+    if (resourcesStartGrouped['startCount'] == 0).all():
+        st.write("No data within selected date range")
     else:
-        hours=['7:00 AM', '8:00 AM','9:00 AM', '10:00 AM','11:00 AM', '12:00 PM','1:00 PM', '2:00 PM','3:00 PM', '4:00 PM', '5:00 PM', '6:00 PM']
-        comb_resources_data = comb_resources_data.sort_values(by='hour', key=lambda x: pd.Categorical(x, categories=hours))
+        desiredHours=['7:00 AM', '8:00 AM','9:00 AM', '10:00 AM','11:00 AM', '12:00 PM','1:00 PM', '2:00 PM','3:00 PM', '4:00 PM', '5:00 PM', '6:00 PM', '7:00 PM', '8:00 PM']
+        missing_values = set(desiredHours) - set(resourcesStartGrouped['startHour'])
+        if missing_values:
+            missing_rows = pd.DataFrame({'startHour': list(missing_values), 'startCount': 0})
+            resourcesStartGrouped = pd.concat([resourcesStartGrouped, missing_rows]).sort_values(by='startHour', key=lambda x: pd.Categorical(x, categories=desiredHours))
+     
+        missing_values = set(desiredHours) - set(resourcesEndGrouped['endHour'])
+        if missing_values:
+            missing_rows = pd.DataFrame({'endHour': list(missing_values), 'endCount': 0})
+            resourcesEndGrouped = pd.concat([resourcesEndGrouped, missing_rows]).sort_values(by='endHour', key=lambda x: pd.Categorical(x, categories=desiredHours))
+
+        missing_values = set(desiredHours) - set(allocsStartGrouped['startHour'])
+        if missing_values:
+            missing_rows = pd.DataFrame({'startHour': list(missing_values), 'startCount': 0})
+            allocsStartGrouped = pd.concat([allocsStartGrouped, missing_rows]).sort_values(by='startHour', key=lambda x: pd.Categorical(x, categories=desiredHours))
+
+        missing_values = set(desiredHours) - set(allocsEndGrouped['endHour'])
+        if missing_values:
+            missing_rows = pd.DataFrame({'endHour': list(missing_values), 'endCount': 0})
+            allocsEndGrouped = pd.concat([allocsEndGrouped, missing_rows]).sort_values(by='endHour', key=lambda x: pd.Categorical(x, categories=desiredHours))
+    
         fig, ax = plt.subplots(figsize=(12, 6))
 
         bar_width = 0.3
         space_between_bars = 0.05
-
-        r1 = np.arange(len(comb_resources_data['hour']))
+        offset = 1.0
+        r1 = np.arange(len(list(desiredHours)))
         r2 = r1 + bar_width + space_between_bars
+        ax.plot(r1, resourcesStartGrouped['startCount'].to_list(), color='r', label='Checked out Resources', marker="o")
+        for i, v in enumerate(resourcesStartGrouped['startCount'].tolist()):
+            ax.text(r1[i], v+offset, str(v), ha='center', va='bottom', fontsize=9, color='white', bbox=dict(facecolor='black', edgecolor='none', pad=0.3))
+        ax.plot(r2, resourcesEndGrouped['endCount'].to_list(), color='b', label='Checked out Resources')
+        for i, v in enumerate(resourcesEndGrouped['endCount'].tolist()):
+            ax.text(r2[i], v+offset, str(v), ha='center', va='bottom', fontsize=9, color='white', bbox=dict(facecolor='black', edgecolor='none', pad=0.3))
+        ax.bar(r1, allocsStartGrouped['startCount'].to_list(), color='r', width=bar_width, label='Checked out Resources')
+        for i, v in enumerate(allocsStartGrouped['startCount'].tolist()):
+            ax.text(r1[i], v+offset, str(v), ha='center', va='bottom', fontsize=9, color='white', bbox=dict(facecolor='black', edgecolor='none', pad=0.3))
+        ax.bar(r2, allocsEndGrouped['endCount'].to_list(), color='b', width=bar_width, label='Checked out Resources')
+        for i, v in enumerate(allocsEndGrouped['endCount'].tolist()):
+            ax.text(r2[i], v+offset, str(v), ha='center', va='bottom', fontsize=9, color='white', bbox=dict(facecolor='black', edgecolor='none', pad=0.3))
 
-        # Plot the lines for start counts and end counts
-        ax.plot(r1, comb_resources_data['alloc_start_counts'].values.flatten(), color='r' , label='Checkouts')
-        ax.plot(r1, comb_resources_data['alloc_end_counts'].values.flatten(), color='g', label='Returns')
-
-        # Plot the bars for start counts and end counts
-        ax.bar(r1, comb_resources_data['resources_start_counts'], color='r', width=bar_width, label='Checked Resources')
-        ax.bar(r2, comb_resources_data['resources_end_counts'], color='b', width=bar_width, label='Returned Resources')
-
-        # Add text annotations for start counts and end counts
-        for i, v in enumerate(comb_resources_data["alloc_start_counts"].tolist()):
-            ax.text(r1[i], v, str(int(v)), ha='center', va='bottom')
-
-        for i, v in enumerate(comb_resources_data["alloc_end_counts"].tolist()):
-            ax.text(r1[i], v, str(int(v)), ha='center', va='bottom')
-
-        # Add text annotations for resource counts
-        for i, v in enumerate(comb_resources_data["resources_start_counts"].tolist()):
-            ax.text(r1[i], v, str(int(v)), ha='center', va='bottom')
-
-        for i, v in enumerate(comb_resources_data["resources_end_counts"].tolist()):
-            ax.text(r2[i], v, str(int(v)), ha='center', va='bottom')
-
-        # Set the x-axis tick positions and labels
-        ax.set_xticks(r1 + bar_width / 2)
-        ax.set_xticklabels(comb_resources_data['hour'], rotation=45, ha="right", fontsize=9)
-
-        # Set the y-axis label
-        ax.set_ylabel('Counts', fontsize=10, fontweight="bold")
-        ax.set_xlabel('Hours', fontsize=10, fontweight="bold")
-
-        # Set the title and legend
-        ax.set_title('Allocation Counts by Hour of the Day', fontsize=18, fontweight="bold")
+        ax.set_xticks(range(len(desiredHours)))
+        ax.set_xticklabels(desiredHours, rotation=45, ha='right')
+        ax.set_title('Pickups and Returns by Hour of the Day', fontsize=18, fontweight="bold")
         ax.legend(loc='upper right')
 
         plt.tight_layout()
         st.pyplot(fig, use_container_width=True)
+
+
+    #     # Plot the bars for start counts and end counts
+
+    #     offset=2.0
+    #     # Add text annotations for start counts and end counts
+    #     for i, v in enumerate(comb_resources_data["alloc_start_counts"].tolist()):
+    #         ax.text(r1[i], v+offset, str(int(v)), ha='center', va='bottom')
+
+    #     for i, v in enumerate(comb_resources_data["alloc_end_counts"].tolist()):
+    #         ax.text(r2[i], v+offset, str(int(v)), ha='center', va='bottom')
+
+    #     for i, v in enumerate(comb_resources_data["resources_start_counts"].tolist()):
+    #         ax.text(r1[i], v+offset, str(int(v)), ha='center', va='bottom', fontsize=9, color='white', bbox=dict(facecolor='black', edgecolor='none', pad=0.3))
+
+    #     for i, v in enumerate(comb_resources_data["resources_end_counts"].tolist()):
+    #         ax.text(r2[i], v+offset, str(int(v)), ha='center', va='bottom', fontsize=9, color='white', bbox=dict(facecolor='black', edgecolor='none', pad=0.3))
+
+    #     # Set the x-axis tick positions and labels
+    #     ax.set_xticks(r1 + bar_width / 2)
+    #     ax.set_xticklabels(comb_resources_data['hour'], rotation=45, ha="right", fontsize=9)
+
+    #     # Set the y-axis label
+    #     ax.set_ylabel('Counts', fontsize=10, fontweight="bold")
+    #     ax.set_xlabel('Hours', fontsize=10, fontweight="bold")
+
+    #     # Set the title and legend
+    #     ax.set_title('Allocation Counts by Hour of the Day', fontsize=18, fontweight="bold")
+    #     ax.legend(loc='upper right')
+
