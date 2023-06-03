@@ -49,19 +49,22 @@ allocsReturnsDF = pd.concat([allocsReturnsDF, missing_df], ignore_index=True)
 if (resourcesPickupsDF['startCount'] == 0).all():
     st.write("No data to display within the date range.")
 else:
-    custom_order = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
-    resourcesPickupsDF['dowStart'] = pd.Categorical(resourcesPickupsDF['dowStart'], categories=custom_order, ordered=True)
-    resourcesReturnsDF['dowEnd'] = pd.Categorical(resourcesReturnsDF['dowEnd'], categories=custom_order, ordered=True)
-    allocsPickupsDF['dowStart'] = pd.Categorical(resourcesPickupsDF['dowStart'], categories=custom_order, ordered=True)
-    allocsReturnsDF['dowEnd'] = pd.Categorical(resourcesReturnsDF['dowEnd'], categories=custom_order, ordered=True)
-
+    custom_order = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday']
+ #   resourcesPickupsDF['dowStart'] = pd.Categorical(resourcesPickupsDF['dowStart'], categories=custom_order, ordered=True)
+ #   resourcesPickupsDF['dowStart'] = resourcesPickupsDF['dowStart'].cat.reorder_categories(custom_order)
+ #   resourcesReturnsDF['dowEnd'] = pd.Categorical(resourcesReturnsDF['dowEnd'], categories=custom_order, ordered=True)
+ #   resourcesReturnsDF['dowEnd'] = resourcesReturnsDF['dowEnd'].cat.reorder_categories(custom_order)
+ #   allocsPickupsDF['dowStart'] = pd.Categorical(allocsPickupsDF['dowStart'], categories=custom_order, ordered=True)
+ #   allocsPickupsDF['dowStart'] = allocsPickupsDF['dowStart'].cat.reorder_categories(custom_order)
+ #   allocsReturnsDF['dowEnd'] = pd.Categorical(allocsReturnsDF['dowEnd'], categories=custom_order, ordered=True)
+ #   allocsReturnsDF['dowEnd'] = allocsReturnsDF['dowEnd'].cat.reorder_categories(custom_order)
     fig, ax = plt.subplots(figsize=(11, 7))
     bar_width = 0.3
-    space_between_bars = 0.05  # Adjust the space between bars as desired
+    space_between_bars = 0.05  
     r1 = range(len(resourcesPickupsDF['dowStart']))
     r2 = [x + bar_width + space_between_bars for x in r1]
 
-    offset=2.0
+    offset = 2.0
     ax.bar(r1, allocsPickupsDF['startCount'].tolist(), color="b", width=bar_width, label="Checkouts")
     for i, v in enumerate(allocsPickupsDF['startCount'].tolist()):
         ax.text(r1[i], v, str(v), ha='center', va='bottom')
@@ -74,9 +77,9 @@ else:
     ax.plot(r2, resourcesReturnsDF["endCount"].tolist(), color="r", label="Resources Checked In", marker="o")
     for i, v in enumerate(resourcesReturnsDF['endCount'].tolist()):
         ax.text(r2[i], v+offset, str(v), ha='center', va='bottom', fontsize=9, color='white', bbox=dict(facecolor='black', edgecolor='none', pad=0.3))
- 
-    ax.set_xticks(list(range(len(allocsPickupsDF['dowStart']))))
-    ax.set_xticklabels(allocsPickupsDF['dowStart'], rotation=45, ha="right")
+
+    ax.set_xticks(range(len(custom_order)))
+    ax.set_xticklabels(custom_order, rotation=45, ha="right")
 
     ax.set_title('Pickups and Returns by Day of the Week', fontsize=18, fontweight="bold")
     ax.legend(loc='upper right')
