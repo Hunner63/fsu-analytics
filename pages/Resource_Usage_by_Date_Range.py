@@ -34,7 +34,7 @@ hide_table_row_index = """
             """
 st.markdown(hide_table_row_index, unsafe_allow_html=True)
 groupedData = groupedData.rename(columns={'rtype': 'Resource Type'})
-if groupedData.count != 0
+if not groupedData.empty:
     rows_per_page = 30
     container = st.container()
     num_pages = len(groupedData) // rows_per_page + 1
