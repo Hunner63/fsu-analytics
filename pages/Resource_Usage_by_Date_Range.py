@@ -34,12 +34,30 @@ hide_table_row_index = """
             """
 st.markdown(hide_table_row_index, unsafe_allow_html=True)
 groupedData = groupedData.rename(columns={'rtype': 'Resource Type'})
-if selectedRtype != "All":
-    st.table(groupedData[groupedData["Resource Type"] == selectedRtype])
-st.markdown(f"**Most frequently used :** ")
-sortedData = groupedData[['Resource Type', 'Count']].nlargest(20, 'Count').sort_values(by='Count', ascending=False)
-st.table(sortedData)
-st.markdown(f"**Least frequenctly used:**")
-st.write(f"The total number of resource types with only one checkout is {len(groupedData[groupedData['Count'] == 1])}")
-sorted_data = groupedData[['Resource Type', 'Count']].nsmallest(20, 'Count').sort_values(by='Count', ascending=True)
-st.table(sorted_data)
+#if selectedRtype != "All":
+#    st.table(groupedData[groupedData["Resource Type"] == selectedRtype])
+#st.markdown(f"**Most frequently used :** ")
+#sortedData = groupedData[['Resource Type', 'Count']].nlargest(20, 'Count').sort_values(by='Count', ascending=False)
+#st.table(sortedData)
+#st.markdown(f"**Least frequenctly used:**")
+#st.write(f"The total number of resource types with only one checkout is {len(groupedData[groupedData['Count'] == 1])}")
+#sorted_data = groupedData[['Resource Type', 'Count']].nsmallest(20, 'Count').sort_values(by='Count', ascending=True)
+#st.table(sorted_data)
+
+rows_per_page = 30
+container = st.container()
+num_pages = len(groupedData) // rows_per_page + 1
+
+# Create a pagination slider to select the page
+page = container.slider('Page', 1, num_pages, 1)
+
+# Calculate the start and end indices for the current page
+start_idx = (page - 1) * rows_per_page
+end_idx = start_idx + rows_per_page
+
+# Display the table for the current page
+container.table(groupedData.sort_values(by='Count', ascending=False)[start_idx:end_idx])
+
+
+
+
