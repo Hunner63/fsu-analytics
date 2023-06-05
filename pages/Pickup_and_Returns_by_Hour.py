@@ -75,13 +75,13 @@ else:
         ax.plot(r1, resourcesStartGrouped['startCount'].to_list(), color='r', label='Checked out Resources', marker="o")
         for i, v in enumerate(resourcesStartGrouped['startCount'].tolist()):
             ax.text(r1[i], v+offset, str(v), ha='center', va='bottom', fontsize=9, color='white', bbox=dict(facecolor='black', edgecolor='none', pad=0.3))
-        ax.plot(r2, resourcesEndGrouped['endCount'].to_list(), color='b', label='Checked out Resources')
+        ax.plot(r2, resourcesEndGrouped['endCount'].to_list(), color='b', label='Returned Resources')
         for i, v in enumerate(resourcesEndGrouped['endCount'].tolist()):
             ax.text(r2[i], v+offset, str(v), ha='center', va='bottom', fontsize=9, color='white', bbox=dict(facecolor='black', edgecolor='none', pad=0.3))
-        ax.bar(r1, allocsStartGrouped['startCount'].to_list(), color='r', width=bar_width, label='Checked out Resources')
+        ax.bar(r1, allocsStartGrouped['startCount'].to_list(), color='r', width=bar_width, label='Allocations checked out')
         for i, v in enumerate(allocsStartGrouped['startCount'].tolist()):
             ax.text(r1[i], v+offset, str(v), ha='center', va='bottom', fontsize=9, color='white', bbox=dict(facecolor='black', edgecolor='none', pad=0.3))
-        ax.bar(r2, allocsEndGrouped['endCount'].to_list(), color='b', width=bar_width, label='Checked out Resources')
+        ax.bar(r2, allocsEndGrouped['endCount'].to_list(), color='b', width=bar_width, label='Allocations returned')
         for i, v in enumerate(allocsEndGrouped['endCount'].tolist()):
             ax.text(r2[i], v+offset, str(v), ha='center', va='bottom', fontsize=9, color='white', bbox=dict(facecolor='black', edgecolor='none', pad=0.3))
 
