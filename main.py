@@ -17,8 +17,8 @@ from PIL import Image
 #}
 
 # Load the image
-image = Image.open("fanshawe.png")
-wco_logo = Image.open("wco_logo.jpg")
+image = Image.open("images/fanshawe.png")
+wco_logo = Image.open("images/wco_logo.jpg")
 
 # Center the content
 st.markdown(

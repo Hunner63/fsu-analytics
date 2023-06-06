@@ -22,12 +22,12 @@ if start_date > end_date:
 dateRangeResourcesDF = df[ ((df["startDate"].dt.date >= start_date) & (df["startDate"].dt.date <= end_date)) | ((df["endDate"].dt.date >= start_date) & (df["endDate"].dt.date <= end_date)) ].copy()
 dateRangeResourcesDF['dowStart'] = dateRangeResourcesDF['startDate'].dt.day_name()
 dateRangeResourcesDF['dowEnd'] = dateRangeResourcesDF['endDate'].dt.day_name()
-
+st.table(dateRangeResourcesDF.reset_index(drop=True))
 resourcesPickupsDF = dateRangeResourcesDF.groupby('dowStart').size().reset_index(name='rStarts')
 resourcesPickupsDF.rename(columns={'dowStart': 'dow'}, inplace=True)
 resourcesReturnsDF = dateRangeResourcesDF.groupby('dowEnd').size().reset_index(name='rEnds')
 resourcesReturnsDF.rename(columns={'dowEnd': 'dow'}, inplace=True)
-dateRangeAllocsDF = dateRangeResourcesDF.drop_duplicates(subset='ckid', keep='first')
+dateRangeAllocsDF = dateRangeResourcesDF.drop_duplicates(subset='ckid', keep='first').copy()
 allocsPickupsDF = dateRangeAllocsDF.groupby('dowStart').size().reset_index(name='aStarts')
 allocsPickupsDF.rename(columns={'dowStart': 'dow'}, inplace=True)
 allocsReturnsDF = dateRangeAllocsDF.groupby('dowEnd').size().reset_index(name='aEnds')
@@ -66,7 +66,7 @@ else:
     space_between_bars = 0.05
     r1 = np.arange(len(days_of_week))
     r2 = [x + bar_width + space_between_bars for x in r1]
-    offset = 10.0
+    offset = 2.0
     ax.bar(r1, mergedDF['aStarts'].tolist(), color="b", width=bar_width, label="Checkouts")
     for i, v in enumerate(mergedDF['aStarts'].tolist()):
         ax.text(r1[i], v+offset, str(v), ha='center', va='bottom')
