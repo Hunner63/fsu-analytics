@@ -30,7 +30,7 @@ if start_date > end_date:
     st.sidebar.error("Invalid date range.")
     st.stop()
 
-dateRangeResourcesDF = df[ ((df["startDate"].dt.date >= start_date) & (df["startDate"].dt.date <= end_date)) | ((df["endDate"].dt.date >= start_date) & (df["endDate"].dt.date <= end_date)) ].copy()
+resourcesFilteredDF = df[(df["startdatetime"] >= pd.to_datetime(start_date)) & (df["startdatetime"] <= pd.to_datetime(end_date)) | (df["enddatetime"] >= pd.to_datetime(start_date)) & (df["enddatetime"] <= pd.to_datetime(end_date))].copy()
 
 if resourcesFilteredDF.empty:
     st.write("No data within selected date range.")
@@ -78,7 +78,7 @@ else:
         ax.plot(r2, resourcesEndGrouped['endCount'].to_list(), color='b', label='Returned Resources')
         for i, v in enumerate(resourcesEndGrouped['endCount'].tolist()):
             ax.text(r2[i], v+offset, str(v), ha='center', va='bottom', fontsize=9, color='white', bbox=dict(facecolor='black', edgecolor='none', pad=0.3))
-        ax.bar(r1, allocsStartGrouped['startCount'].to_list(), color='r', width=bar_width, label='Allocations checked out')
+        ax.bar(r1, allocsStartGrouped['startCount'].to_list(), color='r', width=bar_width, label='Allocations going out')
         for i, v in enumerate(allocsStartGrouped['startCount'].tolist()):
             ax.text(r1[i], v+offset, str(v), ha='center', va='bottom', fontsize=9, color='white', bbox=dict(facecolor='black', edgecolor='none', pad=0.3))
         ax.bar(r2, allocsEndGrouped['endCount'].to_list(), color='b', width=bar_width, label='Allocations returned')
