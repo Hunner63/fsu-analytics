@@ -66,7 +66,7 @@ else:
     space_between_bars = 0.05
     r1 = np.arange(len(days_of_week))
     r2 = [x + bar_width + space_between_bars for x in r1]
-    offset = 2.0
+    offset = 1.0
     ax.bar(r1, mergedDF['aStarts'].tolist(), color="b", width=bar_width, label="Checkouts")
     for i, v in enumerate(mergedDF['aStarts'].tolist()):
         ax.text(r1[i], v+offset, str(v), ha='center', va='bottom')
