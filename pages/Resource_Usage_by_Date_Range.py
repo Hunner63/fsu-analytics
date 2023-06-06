@@ -3,7 +3,7 @@ st.set_page_config(layout="wide")
 import pandas as pd
 import numpy as np
 
-df = pd.read_csv("AprilMayAllocsTurndowns.csv", names=['ckid', 'resource', 'rtype', 'status', 'startdatetime', 'enddatetime', 'actualdatetime'])
+df = pd.read_csv("Resource Schedules.csv", names=['ckid', 'resource', 'rtype', 'status', 'startdatetime', 'enddatetime', 'actualdatetime'])
 
 df['startdatetime'] = pd.to_datetime(df['startdatetime']).dt.date
 df['enddatetime'] = pd.to_datetime(df['enddatetime']).dt.date
