@@ -30,7 +30,7 @@ if start_date > end_date:
     st.sidebar.error("Invalid date range.")
     st.stop()
 
-resourcesFilteredDF = df[(df["startdatetime"] >= pd.to_datetime(start_date)) & (df["startdatetime"] <= pd.to_datetime(end_date))].copy()
+dateRangeResourcesDF = df[ ((df["startDate"].dt.date >= start_date) & (df["startDate"].dt.date <= end_date)) | ((df["endDate"].dt.date >= start_date) & (df["endDate"].dt.date <= end_date)) ].copy()
 
 if resourcesFilteredDF.empty:
     st.write("No data within selected date range.")
