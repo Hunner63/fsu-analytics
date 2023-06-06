@@ -18,6 +18,7 @@ uniqueRtypes.insert(0, "All")
 selectedRtype = st.sidebar.selectbox("Select an rtype", uniqueRtypes)
 
 filteredData = df[(df['startdatetime'] >= startDate) & (df['startdatetime'] <= endDate)]
+
 groupedData = filteredData.groupby('rtype').size().reset_index(name='Count')
 
 count = filteredData.shape[0]
