@@ -7,17 +7,27 @@ import numpy as np
 from datetime import datetime, timedelta
 from datetime import date
 
-df = pd.read_csv("Resource Schedules.csv")
-df.columns = ["ckid", "resources", "rtype", "status", "startdatetime_str", "enddatetime_str"]
+url = "https://webcheckout.fanshawec.ca/feeds/14months-present-rs-schedules-fanshawec-FtwDpq7N.csv"
+df = pd.read_csv(url)
+#df.columns = ["ckid", "resources", "rtype", "status", "startdatetime_str", "enddatetime_str"]
 # Convert datetime columns to datetime format
-df['startdatetime'] = pd.to_datetime(df['startdatetime_str'], format="%m/%d/%y %I:%M %p")
-df['enddatetime'] = pd.to_datetime(df['enddatetime_str'], format="%m/%d/%y %I:%M %p")
+#df['REAL-START-TIME'] = pd.to_datetime(df['REAL-START-TIME'], format="%m/%d/%Y %I:%M %p")
+#df['REAL-END-TIME'] = pd.to_datetime(df['REAL-END-TIME'], format="%m/%d/%Y %I:%M %p")
 #Construct string of hours
-df["start_time_str"] = df["startdatetime_str"].str[9:]
-df['startHour'] = df['start_time_str'].str.split(":").str[0]+":00 "+df['start_time_str'].str[-2:]
-df["end_time_str"] = df["enddatetime_str"].str[9:]
-df['endHour'] = df['end_time_str'].str.split(":").str[0]+":00 "+df['end_time_str'].str[-2:]
+#df['realStartStr'] = pd.to_datetime(df['REAL-START-TIME'].astype(str), format="%Y-%m-%d %H:%M:%S")
+#df['realStartStr'] = df['REAL-START-TIME'].dt.strftime("%Y-%m-%d %I:%M:%S %p")
+df["realStartStr"] = df['REAL-START-TIME'].str[11:]
+df['startHour'] = df['realStartStr'].str.split(":").str[0]+":00 " +df['realStartStr'].str[-2:]
+#df.dropna(subset=['startHour'], inplace=True)
+#statement below contains meridian
+#df['startHour'] = df['realStartStr'].str.split(":").str[0]+":00 "+df['realStartStr'].str[-2:]
+#df['realEndStr'] = df['REAL-END-TIME'].dt.strftime("%Y-%m-%d %I:%M:%S %p")
+df["realEndStr"] = df['REAL-END-TIME'].str[11:]
+df['endHour'] = df['realEndStr'].str.split(":").str[0]+":00 " +df['realEndStr'].str[-2:]
 
+#df["REAL-END-TIME"] = df["REAL-END-TIME"].str[9:]
+#df['endHour'] = df['REAL-END-TIME'].str.split(":").str[0]+":00 "+df['end_time_str'].str[-2:]
+#breakpoint()
 st.sidebar.header("Date Range Selector")
 
 # Set default date range values (one week before today and today)
@@ -30,14 +40,14 @@ if start_date > end_date:
     st.sidebar.error("Invalid date range.")
     st.stop()
 
-resourcesFilteredDF = df[(df["startdatetime"] >= pd.to_datetime(start_date)) & (df["startdatetime"] <= pd.to_datetime(end_date)) | (df["enddatetime"] >= pd.to_datetime(start_date)) & (df["enddatetime"] <= pd.to_datetime(end_date))].copy()
+resourcesFilteredDF = df[(pd.to_datetime(df["REAL-START-TIME"]) >= pd.to_datetime(start_date)) & (pd.to_datetime(df["REAL-START-TIME"]) <= pd.to_datetime(end_date)) | (pd.to_datetime(df["REAL-END-TIME"]) >= pd.to_datetime(start_date)) & (pd.to_datetime(df["REAL-END-TIME"]) <= pd.to_datetime(end_date))].copy()
 
 if resourcesFilteredDF.empty:
     st.write("No data within selected date range.")
 else:
     resourcesStartGrouped = resourcesFilteredDF.groupby('startHour').size().reset_index(name="startCount")
     resourcesEndGrouped = resourcesFilteredDF.groupby('endHour').size().reset_index(name="endCount")
-    allocsFilteredDF = resourcesFilteredDF.drop_duplicates(subset='ckid', keep='first').copy()
+    allocsFilteredDF = resourcesFilteredDF.drop_duplicates(subset='ALLOCATION.NAME', keep='first').copy()
     allocsStartGrouped = allocsFilteredDF.groupby('startHour').size().reset_index(name="startCount")
     allocsEndGrouped = allocsFilteredDF.groupby('endHour').size().reset_index(name="endCount")
    
@@ -66,12 +76,12 @@ else:
             allocsEndGrouped = pd.concat([allocsEndGrouped, missing_rows]).sort_values(by='endHour', key=lambda x: pd.Categorical(x, categories=desiredHours))
     
         fig, ax = plt.subplots(figsize=(12, 6))
-
         bar_width = 0.3
         space_between_bars = 0.05
         offset = 1.0
         r1 = np.arange(len(list(desiredHours)))
         r2 = r1 + bar_width + space_between_bars
+ 
         ax.plot(r1, resourcesStartGrouped['startCount'].to_list(), color='r', label='Checked out Resources', marker="o")
         for i, v in enumerate(resourcesStartGrouped['startCount'].tolist()):
             ax.text(r1[i], v+offset, str(v), ha='center', va='bottom', fontsize=9, color='white', bbox=dict(facecolor='black', edgecolor='none', pad=0.3))

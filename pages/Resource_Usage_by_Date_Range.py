@@ -2,24 +2,33 @@ import streamlit as st
 st.set_page_config(layout="wide")
 import pandas as pd
 import numpy as np
+import zipfile
+from io import BytesIO
 
-df = pd.read_csv("Resource Schedules.csv", names=['ckid', 'resource', 'rtype', 'status', 'startdatetime', 'enddatetime', 'actualdatetime'])
-
-df['startdatetime'] = pd.to_datetime(df['startdatetime']).dt.date
-df['enddatetime'] = pd.to_datetime(df['enddatetime']).dt.date
-df['actualdatetime'] = pd.to_datetime(df['actualdatetime']).dt.date
+url = "https://webcheckout.fanshawec.ca/feeds/14months-present-rs-schedules-fanshawec-FtwDpq7N.csv"
+df = pd.read_csv(url)
+df['startdatetime'] = pd.to_datetime(df['REAL-START-TIME']).dt.date
+df['enddatetime'] = pd.to_datetime(df['REAL-END-TIME']).dt.date
+#df['actualdatetime'] = pd.to_datetime(df['actualdatetime']).dt.date
 
 startDate = st.sidebar.date_input("Start Date")
 endDate = st.sidebar.date_input("End Date")
-
-uniqueRtypes = sorted(df['rtype'].unique(), key=lambda x: x.lower())
-uniqueRtypes.insert(0, "All")
-
-selectedRtype = st.sidebar.selectbox("Select an rtype", uniqueRtypes)
+df.rename(columns={'SCHEDULED-RESOURCE.RESOURCE-TYPE.NAME': 'rtype'}, inplace=True)
+#uniqueRTypes = df['rtype'].dropna().unique()
+#uniqueRTypes = sorted(df['rtype'], key=lambda x: x.lower())
+#uniqueRTypes = uniqueRTypes.insert(0, "All")
+#uniqueRTypes = pd.Series(["All"]).append(uniqueRTypes, ignore_index=True)
+selectedRtype = st.sidebar.selectbox("Select an rtype", df['rtype'])
 
 filteredData = df[(df['startdatetime'] >= startDate) & (df['startdatetime'] <= endDate)]
 
 groupedData = filteredData.groupby('rtype').size().reset_index(name='Count')
+
+buffer = BytesIO()
+with zipfile.ZipFile(buffer, 'w') as zipf:
+    zipf.writestr('resourceUsage'+str(startDate)+'-'+str(endDate)+'.csv', groupedData.to_csv(index=False))
+
+st.sidebar.download_button('Download Data', data=buffer.getvalue(), file_name='data.zip', mime='application/zip')
 
 count = filteredData.shape[0]
 st.markdown(f"<h1 style='text-align: center; color: black;'>Occurances of selected Resource Type by Date Range</h1>", unsafe_allow_html=True)

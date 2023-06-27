@@ -3,7 +3,11 @@ st.set_page_config(layout="wide")
 import pandas as pd
 
 # Read in the data
-turndown_data = pd.read_csv("Turndowns.csv", names=['rtype', 'turndowndatetime', 'cocenter'])
+url = "https://webcheckout.fanshawec.ca/feeds/14months-present-turndown-report-fanshawec-Yd2SKaiN.csv"
+turndown_data = pd.read_csv(url)
+
+turndown_data.rename(columns={'TRANSITION-TIME': 'turndowndatetime'}, inplace=True)
+turndown_data.rename(columns={'RESOURCE-TYPE.NAME': 'rtype'}, inplace=True)
 turndown_data['turndowndatetime'] = pd.to_datetime(turndown_data['turndowndatetime'], errors='coerce')
 turndown_data['turndowndatetime'] = turndown_data['turndowndatetime'].dt.date
 
