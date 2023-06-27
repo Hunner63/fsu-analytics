@@ -5,20 +5,24 @@ import matplotlib.pyplot as plt
 import matplotlib.font_manager as fm
 import numpy as np
 from datetime import datetime, timedelta
+import json
+import urllib.request
 
-df = pd.read_csv("Resource Schedules.csv", names=["ckid", "resource", "rtype", "status", "startdatetime", "enddatetime", "actualdate"])
-df['start_date_str'] = df['startdatetime'].str[:8]
-df['end_date_str'] = df['enddatetime'].str[:8]
-df['startDate']=pd.to_datetime(df['start_date_str'], format="%m/%d/%y" )
-df['endDate']=pd.to_datetime(df['end_date_str'], format="%m/%d/%y" )
-
+url = "https://webcheckout.fanshawec.ca/feeds/14months-present-rs-schedules-fanshawec-FtwDpq7N.csv"
+df = pd.read_csv(url)
+df['start_date_str'] = df['REAL-START-TIME'].str[:10]
+df['end_date_str'] = df['REAL-END-TIME'].str[:10]
+#df['startdatetime'] = pd.to_datetime(df['startdatetimeStr'], format='%Y-%m-%dT%H:%M:%S.%f%z')
+#df['startdatetime'] = df['startdatetime'].fillna('')
+#df['startDate'] = df['startdatetime'].dt.date
+df['startDate']=pd.to_datetime(df['start_date_str'], format="%m/%d/%Y" )
+df['endDate']=pd.to_datetime(df['end_date_str'], format="%m/%d/%Y" )
 st.sidebar.header("Select date range")
 start_date = st.sidebar.date_input("Start Date")
 end_date = st.sidebar.date_input("End Date")
 if start_date > end_date:
     st.sidebar.error("Invalid date range.")
     st.stop()
-
 startDateRangeResourcesDF = df[(df["startDate"].dt.date >= start_date) & (df["startDate"].dt.date <= end_date)].copy()
 startDateRangeResourcesDF.drop('endDate', axis=1, inplace=True)
 endDateRangeResourcesDF = df[(df["endDate"].dt.date >= start_date) & (df["endDate"].dt.date <= end_date)].copy()
@@ -26,13 +30,14 @@ endDateRangeResourcesDF.drop('startDate', axis=1, inplace=True)
 startDateRangeResourcesDF['dowStart'] = startDateRangeResourcesDF['startDate'].dt.day_name()
 endDateRangeResourcesDF['dowEnd'] = endDateRangeResourcesDF['endDate'].dt.day_name()
 
+
 #st.table(dateRangeResourcesDF.reset_index(drop=True))
 resourcesPickupsDF = startDateRangeResourcesDF.groupby('dowStart').size().reset_index(name='rStarts')
 resourcesPickupsDF.rename(columns={'dowStart': 'dow'}, inplace=True)
 resourcesReturnsDF = endDateRangeResourcesDF.groupby('dowEnd').size().reset_index(name='rEnds')
 resourcesReturnsDF.rename(columns={'dowEnd': 'dow'}, inplace=True)
-startDateRangeAllocsDF = startDateRangeResourcesDF.drop_duplicates(subset='ckid', keep='first').copy()
-endDateRangeAllocsDF = endDateRangeResourcesDF.drop_duplicates(subset='ckid', keep='first').copy()
+startDateRangeAllocsDF = startDateRangeResourcesDF.drop_duplicates(subset='ALLOCATION.NAME', keep='first').copy()
+endDateRangeAllocsDF = endDateRangeResourcesDF.drop_duplicates(subset='ALLOCATION.NAME', keep='first').copy()
 allocsPickupsDF = startDateRangeAllocsDF.groupby('dowStart').size().reset_index(name='aStarts')
 allocsPickupsDF.rename(columns={'dowStart': 'dow'}, inplace=True)
 allocsReturnsDF = endDateRangeAllocsDF.groupby('dowEnd').size().reset_index(name='aEnds')
@@ -58,10 +63,8 @@ allocsReturnsDF = pd.concat([allocsReturnsDF, missing_df], ignore_index=True)
 mergedDF = pd.merge(resourcesPickupsDF, resourcesReturnsDF, on='dow', how='outer')
 mergedDF = pd.merge(mergedDF, allocsPickupsDF, on='dow', how='outer')
 mergedDF = pd.merge(mergedDF, allocsReturnsDF, on='dow', how='outer')
-print("pre re-index", mergedDF)
 desired_order = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday']
 mergedDF = mergedDF.set_index('dow').loc[desired_order].reset_index()
-print("post", mergedDF)
 
 if (resourcesPickupsDF['rStarts'] == 0).all():
     st.write("No data to display within the date range.")
